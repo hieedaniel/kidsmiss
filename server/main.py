@@ -72,6 +72,16 @@ def api_list_items(h):
 @route("POST", r"/api/items")
 def api_create_item(h):
     payload = h.json_body()
+    # 题干是唯一必填项：空题干进库等于一条废题，后面组卷会出空白
+    if not str(payload.get("stem") or "").strip():
+        raise ApiError("题干不能为空")
+    if not str(payload.get("chapter") or "").strip():
+        payload["chapter"] = "未分类"
+    if payload.get("stars") is not None:
+        try:
+            payload["stars"] = max(1, min(3, int(payload["stars"])))
+        except (TypeError, ValueError):
+            payload["stars"] = 1
     item = db.create_item(payload)
     return {"item": item}
 

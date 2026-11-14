@@ -171,7 +171,12 @@ function reset() {
       <input ref="fileInput" type="file" accept="image/*" capture="environment" hidden @change="onFile" />
 
       <div v-if="!image" class="dropzone" @click="pick">
-        <div class="big">📷</div>
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+             stroke-linejoin="round" style="color: #9aa39c" aria-hidden="true">
+          <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.6l1.1-1.6A1.6 1.6 0 0 1 9.5 3.7h5a1.6 1.6 0 0 1 1.3.7L16.9 6h1.6A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z" />
+          <circle cx="12" cy="13" r="3.5" />
+        </svg>
         <div style="font-weight: 600; margin-top: 6px">
           {{ uploading ? '上传中…' : '点这里拍照或选图' }}
         </div>
