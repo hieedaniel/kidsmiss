@@ -133,11 +133,9 @@ git branch -M main
 git push -u origin main
 ```
 
-镜像地址：`ghcr.io/hieedaniel/kidsmiss:latest`，同时会生成 `sha-xxxxxxx` 便于回滚。打 `v1.0.0` 这类标签则会额外生成版本 tag。
+镜像地址：`ghcr.io/hieedaniel/kidsmiss:latest`，同时会生成 `sha-xxxxxxx` 便于回滚。打 `v1.0.0` 这类标签则会额外生成版本 tag。实测构建约 2 分钟，镜像 389MB（大头是 chromium 和中文字体）。
 
-**第一次推完要做两件事**：
-- 仓库 `Settings → Actions → General → Workflow permissions` 选 **Read and write permissions**，否则推不了包
-- 镜像默认是 **private**，服务器拉取前先登录：`echo <你的PAT> | docker login ghcr.io -u hieedaniel --password-stdin`。想公开就去 `Packages` 里把包的可见性改成 public
+**推完先看一眼 Actions 页面**。如果「登录 GHCR」那步报 403，去仓库 `Settings → Actions → General → Workflow permissions` 改成 **Read and write permissions** 再重跑。另外 GHCR 的包默认继承仓库可见性——仓库是 public 时镜像也能匿名拉取，此时服务器不需要登录；仓库转 private 后服务器要先 `docker login ghcr.io`。
 
 ### 2. 服务器上拉取运行
 
@@ -159,11 +157,31 @@ docker run -d --name kidsmiss --restart unless-stopped \
 
 数据全在挂载的 `data/` 里（`cuoti.db` + `uploads/` + `figs/` + `papers/`），容器删了重建数据还在。
 
-### 3. 首次使用
+### 3. 把本地已有题库搬上去
+
+服务器上启动的是空库。本地已经录了题的话，把 `server/data` 打包传过去（**先传数据再启动容器**，避免属主变成 root）：
+
+```bash
+# 本地：打包
+cd cuoti-app
+tar -czf data.tgz -C server data
+
+# 传到服务器
+scp data.tgz root@<服务器IP>:~/kidsmiss/
+
+# 服务器：解压到挂载点，再起容器
+cd ~/kidsmiss && mkdir -p data
+tar -xzf data.tgz --strip-components=1 -C data
+docker compose up -d
+```
+
+如果容器已经跑起来了，就先 `docker compose down`，解压后 `chown -R 1000:1000 data`（或直接 `docker compose up -d` 前确认目录权限），再启动。
+
+### 4. 首次使用
 
 浏览器打开 `http://服务器IP:8770` → 侧栏「设置」→ 填大模型接口地址、API Key、模型名 → 点「测试连通」。配好之后上传页的识别才能真正用起来。不配也能用，只是识别要手动填。
 
-### 4. 几个环境变量
+### 5. 几个环境变量
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
@@ -171,13 +189,13 @@ docker run -d --name kidsmiss --restart unless-stopped \
 | `CHROME_PATH` | `/usr/bin/chromium` | PDF 用的浏览器，一般不用改 |
 | `TZ` | `Asia/Shanghai` | 影响卷子文件名里的时间戳 |
 
-### 5. 更新版本
+### 6. 更新版本
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-### 6. 安全提醒
+### 7. 安全提醒
 
 **这套东西没有登录**。直接对公网开放等于谁都能翻你家孩子的错题、改你的题库（里面还存着大模型 Key）。至少做一层：
 
