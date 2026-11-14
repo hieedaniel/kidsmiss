@@ -1,0 +1,205 @@
+# 错题集系统（POC）
+
+手机拍照上传 → AI 识别 → 人工核对入库 → 按章节组卷 → 打印重做 → 记录掌握情况。
+
+前台（手机）用来拍和看，后台（桌面）用来整理和出卷，同一个 Web 应用，响应式切换。
+
+---
+
+## 一、跑起来
+
+```bash
+cd cuoti-app
+./start.bat            # Windows 双击也行；首次会自动 npm install + build
+```
+
+打开 http://127.0.0.1:8770
+
+首次启动会自动建库，并导入 `../cuoti/data/items.json` 里的 8 道题作为演示数据。
+
+**开发模式**（改前端热更新）：
+
+```bash
+python server/main.py --port 8770      # 终端 1：后端
+cd web && npm run dev                  # 终端 2：前端 5173，自动代理到 8770
+```
+
+前端改完要上线，`cd web && npm run build`，后端会自动托管 `dist/`。
+
+---
+
+## 二、为什么后端不用 FastAPI
+
+这台机器的 Python 3.13 装不了任何第三方包（`pip` 报 `No matching distribution`，索引里连 pydantic 都查不到）。
+所以后端用**纯标准库**实现：`http.server` + `sqlite3` + `urllib`，唯一的第三方依赖是 Pillow（本来就装着，用来裁图洗图）。
+
+好处是零安装、换机器直接跑；坏处是没有 ORM 和自动文档。POC 阶段这个取舍是划算的。
+如果以后要迁 FastAPI，`db.py` 的查询逻辑和 `main.py` 的路由表都能直接搬。
+
+---
+
+## 三、目录
+
+```
+cuoti-app/
+  start.bat / start.sh      一键启动
+  Dockerfile                单镜像部署（前端构建 + chromium + 后端）
+  docker-compose.yml        服务器上 `docker compose up -d` 即可
+  .github/workflows/        推 main 自动构建镜像推到 GHCR
+  server/
+    main.py                 HTTP 服务 + 路由表（所有接口都在这儿）
+    db.py                   SQLite 数据层（items / attempts / papers / settings）
+    paper.py                组卷渲染 + PDF（复用 A4 打印样式）
+    ai.py                   多模态识别（OpenAI 兼容，配置化）
+    seed.py                 首次启动的示例数据
+    templates/print.css     A4 卷面样式
+    data/
+      cuoti.db              题库（SQLite）
+      uploads/              原图 + thumbs/ 缩略图
+      figs/                 组卷时裁出来的图形
+      papers/               生成的 html/pdf
+  web/
+    src/views/              Home / Upload / Items / ItemDetail / Paper / Settings
+    src/components/CropBox.vue   拖框裁图组件
+    dist/                  构建产物，后端托管（不入库，`npm run build` 生成）
+  docs/                     界面截图 + 两份示例卷
+```
+
+备份只需要拷 `server/data` 整个目录。`server/data`、`web/dist`、`web/node_modules` 都不入库。
+
+---
+
+## 四、功能
+
+| 页面 | 做什么 |
+|---|---|
+| **概览** | 总题数 / 待掌握 / 已掌握 / 今天该复习；章节分布；最近录入 |
+| **拍照上传** | 拍照或选图 → 拖框圈出图形 → AI 识别 → 改一改 → 入库 |
+| **错题库** | 按章节分组，按章节/状态/星级/时间筛选，支持关键词搜题干和知识点；每条可一键标记「重做对了/又错了」 |
+| **题目详情** | 全字段编辑、重做时间线、掌握度与下次复习日期、重新裁图 |
+| **组卷** | 筛题 → 勾选 → 选轮次 → 生成空白卷和/或复盘页（A4 PDF，直接打印） |
+| **设置** | LLM 接口地址 / Key / 模型 / 提示词；章节字典 |
+
+### 掌握情况怎么算
+
+每次点「对 / 错」写一条 `attempts` 记录，同时：
+
+- 答错 → 星级 +1（最高 3 星），状态回到 `wrong`
+- 答对且星级 ≤1 → 状态变 `mastered`
+
+下次复习日期按连续答对次数拉长间隔：0 次 → 1 天，1 次 → 3 天，2 次 → 7 天，3 次 → 21 天。
+到期且上次答错的题，会出现在概览页的「该复习了」。
+
+这就是最简单的间隔重复，够用且好理解。
+
+---
+
+## 五、配大模型
+
+到「设置」里填三样：接口地址、API Key、模型名。默认给的是 vectorengine 的 `gpt-4o`。
+
+点「测试连通」会用一句「回复两个字：可用」验证 key 和地址，不消耗多少 token。
+
+识别走 `/chat/completions` 的 vision 格式，所以任何 OpenAI 兼容的多模态服务都能用：
+`gpt-4o`、`gemini-2.0-flash`、`qwen-vl-max`、`glm-4v` 都行。
+
+内置提示词要求模型返回结构化 JSON（章节、知识点、题干、选项、答案、解析、错因），
+分数用 `[3/4]` 写法——前端和印刷都会渲染成真正的上下分数。
+想改识别风格，在设置里覆盖提示词即可，不用动代码。
+
+**Key 存在本地 SQLite，接口返回时会被替换成 `***`，不会回传到前端。**
+
+---
+
+## 六、已知限制
+
+1. **识别要人复核**。答案、错因、章节都可能错，尤其是几何图的坐标判读。上传页识别完有提示，别跳过。
+2. **一题一张图**。整页拍进来再靠拖框裁图，不能自动切题。自动切题需要版面分析，POC 没做。
+3. **排版不会完美**。长题干换行、公式位置偶尔别扭，生成的 HTML 在 `server/data/papers/` 里，能直接改。
+4. **没做用户体系**。按你的要求，单机自用、无登录。别把它暴露到公网。
+5. **PDF 依赖 chromium**。本地用 Edge/Chrome 的 headless 打印，容器里装的是 Debian 的 chromium；两者都找不到时只出 HTML，不会报错但也拿不到 PDF。
+
+---
+
+## 七、部署到服务器
+
+### 1. 推代码，自动构建镜像
+
+推送到 `main` 后，Actions 会自动跑 `.github/workflows/docker.yml`：构建前端 → 装 chromium 和中文字体 → 推镜像到 GHCR。
+
+```bash
+git remote add origin https://github.com/hieedaniel/kidsmiss.git
+git branch -M main
+git push -u origin main
+```
+
+镜像地址：`ghcr.io/hieedaniel/kidsmiss:latest`，同时会生成 `sha-xxxxxxx` 便于回滚。打 `v1.0.0` 这类标签则会额外生成版本 tag。
+
+**第一次推完要做两件事**：
+- 仓库 `Settings → Actions → General → Workflow permissions` 选 **Read and write permissions**，否则推不了包
+- 镜像默认是 **private**，服务器拉取前先登录：`echo <你的PAT> | docker login ghcr.io -u hieedaniel --password-stdin`。想公开就去 `Packages` 里把包的可见性改成 public
+
+### 2. 服务器上拉取运行
+
+```bash
+mkdir -p ~/kidsmiss/data && cd ~/kidsmiss
+curl -O https://raw.githubusercontent.com/hieedaniel/kidsmiss/main/docker-compose.yml
+docker compose pull && docker compose up -d
+```
+
+或者不用 compose：
+
+```bash
+docker run -d --name kidsmiss --restart unless-stopped \
+  -p 8770:8770 \
+  -v ~/kidsmiss/data:/app/server/data \
+  -e TZ=Asia/Shanghai \
+  ghcr.io/hieedaniel/kidsmiss:latest
+```
+
+数据全在挂载的 `data/` 里（`cuoti.db` + `uploads/` + `figs/` + `papers/`），容器删了重建数据还在。
+
+### 3. 首次使用
+
+浏览器打开 `http://服务器IP:8770` → 侧栏「设置」→ 填大模型接口地址、API Key、模型名 → 点「测试连通」。配好之后上传页的识别才能真正用起来。不配也能用，只是识别要手动填。
+
+### 4. 几个环境变量
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `CUOTI_SEED` | `0`（镜像内） | 首次启动是否导入 9 道示例题。想要就设 `1` |
+| `CHROME_PATH` | `/usr/bin/chromium` | PDF 用的浏览器，一般不用改 |
+| `TZ` | `Asia/Shanghai` | 影响卷子文件名里的时间戳 |
+
+### 5. 更新版本
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+### 6. 安全提醒
+
+**这套东西没有登录**。直接对公网开放等于谁都能翻你家孩子的错题、改你的题库（里面还存着大模型 Key）。至少做一层：
+
+```nginx
+# 放在 vhost 里，套一层 Basic Auth
+location / {
+    auth_basic "restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    proxy_pass http://127.0.0.1:8770;
+    proxy_set_header Host $host;
+    client_max_body_size 30m;   # 上传原图要放宽，默认 1m 会失败
+}
+```
+
+或者干脆只挂 VPN / 内网访问。
+
+---
+
+## 八、下一步可以加什么
+
+- 自动切题：上传整页后按行投影切出多道题，一次入多题
+- 知识点树：现在章节是扁平字符串，可以换成「章 — 节 — 知识点」三级
+- 同类题推送：识别出知识点后调用题库/搜索接口补充变式题
+- 艾宾浩斯可视化：把每道题的复习曲线画出来
+- 换 FastAPI + SQLAlchemy：要多人用、要 API 文档的时候再迁

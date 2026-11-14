@@ -1,0 +1,319 @@
+/* ============ A4 错题卷打印样式 ============ */
+@page {
+  size: A4;
+  margin: 15mm 14mm 12mm 14mm;
+}
+
+* { box-sizing: border-box; }
+
+/* 屏幕预览：按 A4 内容宽度显示，和打印效果一致 */
+@media screen {
+  body {
+    width: 182mm;
+    margin: 10mm auto;
+    padding: 4mm 4mm 8mm;
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .18);
+  }
+  /* 屏幕预览时标出分页位置，打印时不显示 */
+  .item.start-page {
+    margin-top: 12mm;
+    padding-top: 6mm;
+    border-top: 2px dashed #c8c8c8;
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+}
+
+body {
+  font-family: "Times New Roman", SimSun, "宋体", "Noto Serif CJK SC",
+    "Noto Serif CJK", "Source Han Serif SC", serif;
+  font-size: 12pt;
+  line-height: 1.85;
+  color: #000;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---------- 卷头 ---------- */
+.paper-head {
+  border-bottom: 2px solid #000;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.paper-title {
+  font-family: "Times New Roman", SimHei, "黑体", "Noto Sans CJK SC",
+    "Noto Sans CJK", "Source Han Sans SC", sans-serif;
+  font-size: 17pt;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 1px;
+  margin: 0 0 2px;
+}
+
+.paper-sub {
+  text-align: center;
+  font-size: 9.5pt;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.paper-fields {
+  display: flex;
+  gap: 18px;
+  font-size: 10.5pt;
+  padding: 0 2px;
+}
+
+.paper-fields span { flex: 1; white-space: nowrap; }
+.paper-fields .fill {
+  display: inline-block;
+  border-bottom: 1px solid #000;
+  min-width: 42px;
+}
+
+/* ---------- 题目 ---------- */
+.item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0 0 6px;
+  padding-bottom: 1px;
+}
+
+.pts { color: #6a6a6a; font-size: 9.5pt; margin-left: 3px; }
+
+.stem {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.no {
+  font-weight: 700;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 1.55em;
+}
+
+.body { flex: 1 1 auto; min-width: 0; }
+
+.qhead {
+  font-size: 9pt;
+  color: #555;
+  display: inline-block;
+  border: 1px solid #bbb;
+  border-radius: 2px;
+  padding: 0 5px;
+  line-height: 1.5;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+/* 子选项 ①②③④ */
+.subs { margin: 2px 0 0 1.6em; }
+.subs .sub { display: flex; gap: 6px; }
+.subs .mark { flex: 0 0 1.4em; text-align: right; }
+
+.options {
+  margin: 3px 0 0 1.4em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 30px;
+}
+.options.vertical { display: block; }
+.options.vertical .opt { display: block; }
+.opt { white-space: nowrap; }
+
+/* ---------- 分数 ---------- */
+.frac {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 0.95em;
+  line-height: 1.12;
+  margin: 0 0.06em;
+  position: relative;
+  top: 0.11em;
+}
+.frac .num {
+  display: block;
+  border-bottom: 1.1px solid currentColor;
+  padding: 0 0.2em 0.03em;
+}
+.frac .den {
+  display: block;
+  padding: 0.03em 0.2em 0;
+}
+
+/* ---------- 原卷图形 ---------- */
+.fig {
+  margin: 4px 0 4px 1.4em;
+}
+.fig img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: -webkit-optimize-contrast;
+}
+.fig.inline img { max-height: 58mm; width: auto; }
+.fig .cap {
+  font-size: 8.5pt;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* ---------- 答题区 ---------- */
+.space {
+  margin-left: 1.4em;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 9.1mm,
+    #b4b4b4 9.1mm,
+    #b4b4b4 9.3mm
+  );
+  background-position: 0 0;
+}
+.answer-blank {
+  display: inline-block;
+  min-width: 76px;
+  border-bottom: 1px solid #000;
+  height: 1.1em;
+  vertical-align: -0.18em;
+  margin: 0 3px;
+}
+
+/* ---------- 复盘页 ---------- */
+.review-grid {
+  display: flex;
+  gap: 0;
+  border: 1px solid #999;
+  margin: 6px 0 4px 1.4em;
+  font-size: 10.5pt;
+}
+.review-grid .cell {
+  flex: 1;
+  padding: 3px 8px;
+  border-right: 1px solid #999;
+}
+.review-grid .cell:last-child { border-right: 0; }
+.review-grid .cell:nth-child(2) { flex: 1.15; }
+.review-grid .cell:nth-child(3) { flex: 1.5; }
+.review-grid .cell:nth-child(4) { flex: 0.55; }
+.review-grid .k {
+  font-size: 8.5pt;
+  color: #666;
+  display: block;
+  line-height: 1.4;
+}
+.review-grid .v { line-height: 1.6; }
+.v.right { color: #0a6b2e; font-weight: 700; }
+.v.wrong { color: #b3261e; text-decoration: line-through; text-decoration-thickness: 1px; }
+
+.badge {
+  display: inline-block;
+  font-family: SimHei, "黑体", "Noto Sans CJK SC", "Noto Sans CJK",
+    "Source Han Sans SC", sans-serif;
+  font-size: 8.5pt;
+  line-height: 1.6;
+  padding: 0 6px;
+  border: 1px solid #b3261e;
+  color: #b3261e;
+  border-radius: 2px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+.badge.ok { border-color: #0a6b2e; color: #0a6b2e; }
+.badge.ask { border-color: #8a6d00; color: #8a6d00; }
+
+.block {
+  margin: 4px 0 0 1.4em;
+  font-size: 10.5pt;
+  line-height: 1.75;
+}
+.block .label {
+  font-family: SimHei, "黑体", "Noto Sans CJK SC", "Noto Sans CJK",
+    "Source Han Sans SC", sans-serif;
+  font-size: 9.5pt;
+  color: #333;
+  display: block;
+  margin-bottom: 1px;
+}
+.block ol { margin: 0; padding-left: 1.5em; }
+.block ol li { margin-bottom: 1px; }
+.block.cause {
+  border-left: 3px solid #b3261e;
+  background: #fbf4f3;
+  padding: 4px 8px;
+}
+.block.verify {
+  border-left: 3px solid #8a6d00;
+  background: #fdf8e8;
+  padding: 4px 8px;
+}
+.block.verify .label { color: #8a6d00; }
+
+/* 原卷小图（复盘用） */
+.raw {
+  margin: 5px 0 0 1.4em;
+  border: 1px dashed #bbb;
+  padding: 3px;
+}
+.raw img { display: block; width: 100%; }
+.raw .cap { font-size: 8pt; color: #777; }
+
+/* ---------- 页脚 / 分隔 ---------- */
+.page-break { break-after: page; page-break-after: always; }
+.item.start-page { break-before: page; page-break-before: always; }
+.section-title {
+  font-family: SimHei, "黑体", "Noto Sans CJK SC", "Noto Sans CJK",
+    "Source Han Sans SC", sans-serif;
+  font-size: 12pt;
+  border-left: 4px solid #000;
+  padding-left: 7px;
+  margin: 6px 0 8px;
+}
+.end-mark {
+  text-align: center;
+  color: #888;
+  font-size: 9pt;
+  margin-top: 10px;
+}
+
+/* ---------- 卷末重做记录表 ---------- */
+.record {
+  margin-top: 8mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.record .r-title {
+  font-family: SimHei, "黑体", "Noto Sans CJK SC", "Noto Sans CJK",
+    "Source Han Sans SC", sans-serif;
+  font-size: 10pt;
+  margin-bottom: 3px;
+}
+.record table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+.record th,
+.record td {
+  border: 1px solid #888;
+  padding: 3px 5px;
+  text-align: center;
+  height: 10mm;
+}
+.record th {
+  font-family: SimHei, "黑体", "Noto Sans CJK SC", "Noto Sans CJK",
+    "Source Han Sans SC", sans-serif;
+  font-weight: 400;
+  background: #f2f2f2;
+  height: auto;
+}
+.record td.lbl { font-family: SimHei, "黑体", sans-serif; color: #444; }

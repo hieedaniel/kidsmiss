@@ -1,0 +1,35 @@
+# ---------- 运行时数据（含数据库、上传的原图、生成的卷子）----------
+# 这些是私有的，不入库；备份直接拷这个目录
+server/data/
+
+# ---------- 前端 ----------
+web/node_modules/
+web/dist/
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# ---------- 本地环境变量 ----------
+.env
+.env.local
+.env.*.local
+
+# ---------- 系统 / 编辑器 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# ---------- 临时产物 ----------
+*.log
+_shot_*.png
+_m_*.png
+_final*.png
+_preview*.png
