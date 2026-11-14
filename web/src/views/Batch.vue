@@ -13,9 +13,11 @@ const opt = reactive({ exam: '批量导入', hint: '' })
 const MAX_FILES = 30
 let timer = null
 let seq = 0
+let submitted = []   // 实际提交的那几张，轮询回来按这个顺序对上
 
+const ready = computed(() => pics.value.filter((p) => p.file))
 const canStart = computed(
-  () => pics.value.length > 0 && pics.value.every((p) => p.file) && !task.value
+  () => ready.value.length > 0 && !busy.value && !task.value && !starting.value
 )
 const busy = computed(() => pics.value.some((p) => p.state === 'uploading'))
 const progress = computed(() => {
@@ -102,13 +104,14 @@ async function start() {
   error.value = ''
   starting.value = true
   try {
+    submitted = ready.value.slice()
     const { job } = await api.batchStart({
-      files: pics.value.map((p) => p.file),
+      files: submitted.map((p) => p.file),
       exam: opt.exam || '批量导入',
       hint: opt.hint,
     })
     task.value = job
-    pics.value.forEach((p) => {
+    submitted.forEach((p) => {
       p.state = 'pending'
       p.stage = '排队中'
     })
@@ -126,7 +129,7 @@ async function poll(id) {
     const { job } = await api.batchJob(id)
     task.value = job
     job.files.forEach((f, i) => {
-      const p = pics.value[i]
+      const p = submitted[i]
       if (!p) return
       p.state = f.status
       p.stage = f.stage
@@ -241,10 +244,13 @@ const figIds = computed(() => {
       <div v-if="!task" class="row" style="margin-top: 12px">
         <button class="btn btn-primary" :disabled="!canStart || starting" @click="start">
           <span v-if="starting" class="spinner"></span>
-          {{ starting ? '启动中…' : `开始批量入库（${pics.length} 张）` }}
+          {{ starting ? '启动中…' : `开始批量入库（${ready.length} 张）` }}
         </button>
         <button class="btn" :disabled="busy" @click="pick">继续添加</button>
         <span v-if="busy" class="small muted">正在上传…</span>
+        <span v-else-if="ready.length < pics.length" class="small muted">
+          有 {{ pics.length - ready.length }} 张没传上去，会跳过
+        </span>
       </div>
 
       <details v-if="!task" style="margin-top: 10px">
