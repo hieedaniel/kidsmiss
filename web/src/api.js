@@ -41,6 +41,11 @@ export const api = {
   recognize: (file, hint = '') =>
     request('/api/ai/recognize', { method: 'POST', body: { file, hint } }),
 
+  batchStart: (body) => request('/api/batch/jobs', { method: 'POST', body }),
+  batchJob: (id) => request(`/api/batch/jobs/${id}`),
+  batchJobs: () => request('/api/batch/jobs'),
+  batchDrop: (id) => request(`/api/batch/jobs/${id}`, { method: 'DELETE' }),
+
   settings: () => request('/api/settings'),
   saveSettings: (body) => request('/api/settings', { method: 'PUT', body }),
   testSettings: () => request('/api/settings/test', { method: 'POST', body: {} }),

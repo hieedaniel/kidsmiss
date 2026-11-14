@@ -8,7 +8,8 @@ const dueCount = ref(0)
 
 const navs = [
   { to: '/', ico: '▦', label: '概览' },
-  { to: '/upload', ico: '＋', label: '拍照上传' },
+  { to: '/batch', ico: '⊞', label: '批量入库' },
+  { to: '/upload', ico: '＋', label: '单张录入' },
   { to: '/items', ico: '☰', label: '错题库' },
   { to: '/paper', ico: '⎙', label: '组卷' },
   { to: '/settings', ico: '⚙', label: '设置' },

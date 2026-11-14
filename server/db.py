@@ -105,8 +105,21 @@ def _load(row: sqlite3.Row) -> dict:
     return d
 
 
+_COLS: set[str] | None = None
+
+
+def _columns() -> set[str]:
+    """items 表实际有哪些列（缓存）。用来挡掉调用方多传的字段，别让 SQL 报错。"""
+    global _COLS
+    if _COLS is None:
+        with connect() as c:
+            _COLS = {r["name"] for r in c.execute("PRAGMA table_info(items)")}
+    return _COLS
+
+
 def _dump(item: dict) -> dict:
-    d = dict(item)
+    cols = _columns()
+    d = {k: v for k, v in item.items() if k in cols}
     for f in JSON_FIELDS:
         if f in d and not isinstance(d[f], str):
             d[f] = json.dumps(d[f], ensure_ascii=False)

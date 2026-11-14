@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   { path: '/', name: 'home', component: () => import('./views/Home.vue') },
   { path: '/upload', name: 'upload', component: () => import('./views/Upload.vue') },
+  { path: '/batch', name: 'batch', component: () => import('./views/Batch.vue') },
   { path: '/items', name: 'items', component: () => import('./views/Items.vue') },
   { path: '/items/:id', name: 'item', component: () => import('./views/ItemDetail.vue') },
   { path: '/paper', name: 'paper', component: () => import('./views/Paper.vue') },

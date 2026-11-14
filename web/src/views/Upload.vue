@@ -156,10 +156,13 @@ function reset() {
 <template>
   <div class="page-head">
     <div>
-      <h1 class="page-title">拍照上传</h1>
-      <p class="page-desc">拍一张 → 识别 → 核对 → 入库</p>
+      <h1 class="page-title">单张录入</h1>
+      <p class="page-desc">拍一张 → 识别 → 核对 → 入库；整页多题的照片走批量入库更快</p>
     </div>
-    <button class="btn" @click="reset">重来</button>
+    <div class="row">
+      <router-link to="/batch" class="btn btn-primary">批量入库</router-link>
+      <button class="btn" @click="reset">重来</button>
+    </div>
   </div>
 
   <div v-if="error" class="alert alert-error">{{ error }}</div>

@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import json
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -274,8 +275,40 @@ if new_id:
 st, e1 = req("POST", "/api/papers", {"item_ids": [], "mode": "blank"})
 check("空选题返回 400", st == 400, f"status={st}")
 
-# ---------------------------------------------------------------- 10. 安全
-section("10. 静态资源与路径穿越")
+# ---------------------------------------------------------------- 10. 批量
+section("10. 批量入库接口")
+st, bl = req("GET", "/api/batch/jobs")
+check("任务列表可访问", st == 200 and isinstance((bl or {}).get("jobs"), list), f"status={st}")
+
+st, _ = req("POST", "/api/batch/jobs", {"files": []})
+check("空文件列表返回 400", st == 400, f"status={st}")
+
+st, _ = req("POST", "/api/batch/jobs", {"files": "a.jpg"})
+check("files 不是数组返回 400", st == 400, f"status={st}")
+
+st, _ = req("GET", "/api/batch/jobs/nosuchjob")
+check("不存在的任务返回 404", st == 404, f"status={st}")
+
+st, _ = req("DELETE", "/api/batch/jobs/nosuchjob")
+check("删不存在的任务不报错", st == 200, f"status={st}")
+
+st, br = req("POST", "/api/batch/jobs", {"files": ["__not_exist__.jpg"]})
+check("参考图缺失时服务不崩（200/502）", st in (200, 502), f"status={st}")
+if st == 200:
+    jid = br["job"]["id"]
+    job = {}
+    for _ in range(30):
+        _, jr = req("GET", f"/api/batch/jobs/{jid}")
+        job = (jr or {}).get("job", {})
+        if job.get("status") == "done":
+            break
+        time.sleep(0.3)
+    check("缺图的那张被标失败而不是卡住",
+          job.get("status") == "done" and job.get("failed") == 1,
+          f"failed={job.get('failed')} saved={job.get('saved')}")
+
+# ---------------------------------------------------------------- 11. 安全
+section("11. 静态资源与路径穿越")
 st, _ = req("GET", "/")
 check("首页可访问", st == 200, f"status={st}")
 st, assets = req("GET", "/assets/")
@@ -289,7 +322,7 @@ for bad in ("/uploads/../../server/main.py", "/uploads/..%2f..%2fserver%2fmain.p
     check(f"拒绝路径穿越 {bad[:34]}", st in (400, 403, 404), f"status={st}")
 
 # ---------------------------------------------------------------- 11. 清理
-section("11. 清理测试数据")
+section("12. 清理测试数据")
 if new_id:
     st, _ = req("DELETE", f"/api/items/{new_id}")
     check("删除测试题", st == 200, f"status={st}")

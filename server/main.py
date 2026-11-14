@@ -27,6 +27,7 @@ BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE))
 
 import ai  # noqa: E402
+import batch  # noqa: E402
 import db  # noqa: E402
 import paper  # noqa: E402
 
@@ -177,6 +178,48 @@ def api_recognize(h):
     except RuntimeError as e:
         raise ApiError(str(e), 502)
     return {"draft": draft}
+
+
+# ---------------------------------------------------------------- 批量流水线
+@route("POST", r"/api/batch/jobs")
+def api_batch_start(h):
+    body = h.json_body()
+    files = body.get("files") or []
+    if not isinstance(files, list):
+        raise ApiError("files 要传文件名的数组")
+    opt = {
+        "subject": body.get("subject") or "数学",
+        "grade": body.get("grade") or "六年级上册",
+        "exam": body.get("exam") or "批量导入",
+        "exam_date": body.get("exam_date") or datetime.now().strftime("%Y-%m-%d"),
+        "hint": body.get("hint") or "",
+    }
+    try:
+        job = batch.create_job(files, opt)
+    except ValueError as e:
+        raise ApiError(str(e))
+    except RuntimeError as e:
+        raise ApiError(str(e), 502)
+    return {"job": job}
+
+
+@route("GET", r"/api/batch/jobs/(?P<job_id>[\w-]+)")
+def api_batch_get(h, job_id):
+    job = batch.snapshot(job_id)
+    if not job:
+        raise ApiError("任务不存在（服务重启后历史任务会清空）", 404)
+    return {"job": job}
+
+
+@route("GET", r"/api/batch/jobs")
+def api_batch_list(h):
+    return {"jobs": batch.list_jobs()}
+
+
+@route("DELETE", r"/api/batch/jobs/(?P<job_id>[\w-]+)")
+def api_batch_drop(h, job_id):
+    batch.JOBS.pop(job_id, None)
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- 设置
